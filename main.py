@@ -85,6 +85,9 @@ def main():
         exit(1)
 
     try:
+        mcp.run(transport='stdio')
+        print("server up")
+
         while True:
             # stdio_command(container)
             pass
