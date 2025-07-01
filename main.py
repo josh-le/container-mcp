@@ -1,17 +1,24 @@
 from mcp.server.fastmcp import FastMCP
 import docker
-import subprocess
 
 mcp = FastMCP("container")
 
 @mcp.tool()
-async def send_bash_command(command: str):
+async def send_sh_command(command: str):
     """Send an sh command to the Alpine linux container that was newly created at the beginning of this conversation. The output produced by the command will be returned.
 
     Args:
         command: the sh command to send to the Alpine container
     """
-    pass
+    if not container:
+        print("Container not initialized yet during")
+        exit(1)
+    exec_result = container.exec_run(["/bin/sh", "-c", command])
+    output = exec_result.output.decode("utf-8").strip()
+    print(f"\nCommand: {command}")
+    print(f"Output: {output}")
+    print(f"Exit Code: {exec_result.exit_code}")
+    return output
 
 def initialize_container():
     # Initialize the Docker client
@@ -39,6 +46,14 @@ def initialize_container():
     
     return container
 
+def stdio_command(container):
+    command = input("Command: ")
+    exec_result = container.exec_run(["/bin/sh", "-c", command])
+    output = exec_result.output.decode("utf-8").strip()
+    print(f"\nCommand: {command}")
+    print(f"Output: {output}")
+    print(f"Exit Code: {exec_result.exit_code}")
+
 def test_commands(container):
     # Send a command to the container's shell (e.g., 'echo "Hello, Alpine!"')
     command = 'echo "Hello, Alpine!"'
@@ -63,15 +78,19 @@ def test_commands(container):
     print(f"Exit Code: {exec_result.exit_code}")
 
 def main():
+    global container 
     container = initialize_container()
     if not container:
         print("Failed to initialize docker container.")
         exit(1)
 
-    test_commands(container)
-
-    container.kill()
-    print(f"Container {container.name} stopped and will be auto-removed.")
+    try:
+        while True:
+            # stdio_command(container)
+            pass
+    finally:
+        container.kill()
+        print(f"Container {container.name} stopped and will be auto-removed.")
 
 if __name__ == "__main__":
     main()
