@@ -1,5 +1,7 @@
 from mcp.server.fastmcp import FastMCP
 import docker
+import signal
+import sys
 
 mcp = FastMCP("container")
 
@@ -27,7 +29,7 @@ def initialize_container():
     # Define container parameters for an Alpine container
     container_config = {
         "image": "alpine:latest",  # Use Alpine image
-        "name": "my-alpine-container",  # Name the container
+        "name": "mcp-container",  # Name the container
         "detach": True,  # Run in the background
         "auto_remove": True,  # Remove container when it stops
         "command": "tail -f /dev/null"
@@ -77,23 +79,27 @@ def test_commands(container):
     print(f"Output: {output}")
     print(f"Exit Code: {exec_result.exit_code}")
 
+def cleanup_container():
+    if container:
+        container.kill()
+        print(f"Container {container.name} stopped and will be auto-removed.")
+    sys.exit(0)
+
 def main():
     global container 
     container = initialize_container()
+    signal.signal(signal.SIGTERM, cleanup_container)
+    signal.signal(signal.SIGINT, cleanup_container)
     if not container:
         print("Failed to initialize docker container.")
         exit(1)
 
-    try:
-        mcp.run(transport='stdio')
-        print("server up")
+    mcp.run(transport='stdio')
+    print("server up")
 
-        while True:
-            # stdio_command(container)
-            pass
-    finally:
-        container.kill()
-        print(f"Container {container.name} stopped and will be auto-removed.")
+    while True:
+        # stdio_command(container)
+        pass
 
 if __name__ == "__main__":
     main()
